@@ -15,8 +15,8 @@ stages:
       params.yaml:
         data.random_state: 42
         data.test_size: 0.2
-        random_forest.max_depth:
-        random_forest.n_estimators: 100
+        random_forest.max_depth: 10
+        random_forest.n_estimators: 200
         random_forest.random_state: 42
     outs:
     - path: metrics.json
@@ -25,5 +25,5 @@ stages:
       size: 90
     - path: models/random_forest.pkl
       hash: md5
-      md5: 9f2631b831adf2ef8b21ca0e64b57630
-      size: 373883
+      md5: a5931a5cc45601dc6bede15f1a2db412
+      size: 628283
