@@ -65,7 +65,8 @@ preprocessor = ColumnTransformer([
 
 # Random Forest
 model = RandomForestClassifier(
-    n_estimators=100,
+    n_estimators=200,
+    max_depth=10,
     random_state=42
 )
 
@@ -94,7 +95,7 @@ print("\nClassification Report:")
 print(classification_report(y_test, y_pred))
 
 # Save model
-model_path = "models/random_forest_v1.pkl"
+model_path = "models/random_forest_v2.pkl"
 joblib.dump(pipeline, model_path)
 
 print(f"\nModel saved to: {model_path}")
