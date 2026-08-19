@@ -1,5 +1,7 @@
 import pandas as pd
 import joblib
+import yaml
+import json
 
 from sklearn.model_selection import train_test_split
 from sklearn.compose import ColumnTransformer
@@ -7,7 +9,20 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.impute import SimpleImputer
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    classification_report
+)
+
+# Load parameters
+with open("params.yaml", "r") as f:
+    params = yaml.safe_load(f)
+
+rf_params = params["random_forest"]
+data_params = params["data"]
 
 # Load dataset
 data_path = "data/kidney_disease.csv"
@@ -19,7 +34,7 @@ df.columns = df.columns.str.strip()
 # Target column
 target = "classification"
 
-# Remove ID column if present
+# Remove ID column
 if "id" in df.columns:
     df = df.drop(columns=["id"])
 
@@ -27,49 +42,56 @@ if "id" in df.columns:
 X = df.drop(columns=[target])
 y = df[target]
 
-# Clean target values
+# Clean target
 y = y.astype(str).str.strip().str.lower()
 
-# Encode common target labels
 y = y.replace({
     "ckd": 1,
     "notckd": 0,
     "not ckd": 0
 })
 
-# Convert unknown target values to numeric and remove invalid rows
 y = pd.to_numeric(y, errors="coerce")
 
+# Remove invalid rows
 valid = y.notna()
 X = X.loc[valid]
 y = y.loc[valid].astype(int)
 
 # Identify column types
-numeric_cols = X.select_dtypes(include=["number"]).columns.tolist()
-categorical_cols = X.select_dtypes(exclude=["number"]).columns.tolist()
+numeric_cols = X.select_dtypes(
+    include=["number"]
+).columns.tolist()
 
-# Preprocessing
+categorical_cols = X.select_dtypes(
+    exclude=["number"]
+).columns.tolist()
+
+# Numerical preprocessing
 numeric_pipeline = Pipeline([
     ("imputer", SimpleImputer(strategy="median"))
 ])
 
+# Categorical preprocessing
 categorical_pipeline = Pipeline([
     ("imputer", SimpleImputer(strategy="most_frequent")),
     ("encoder", OneHotEncoder(handle_unknown="ignore"))
 ])
 
+# Preprocessor
 preprocessor = ColumnTransformer([
     ("num", numeric_pipeline, numeric_cols),
     ("cat", categorical_pipeline, categorical_cols)
 ])
 
-# Random Forest
+# Random Forest using params.yaml
 model = RandomForestClassifier(
-    n_estimators=200,
-    max_depth=10,
-    random_state=42
+    n_estimators=rf_params["n_estimators"],
+    max_depth=rf_params["max_depth"],
+    random_state=rf_params["random_state"]
 )
 
+# Complete pipeline
 pipeline = Pipeline([
     ("preprocessor", preprocessor),
     ("model", model)
@@ -79,23 +101,49 @@ pipeline = Pipeline([
 X_train, X_test, y_train, y_test = train_test_split(
     X,
     y,
-    test_size=0.2,
-    random_state=42,
+    test_size=data_params["test_size"],
+    random_state=data_params["random_state"],
     stratify=y
 )
 
 # Train
 pipeline.fit(X_train, y_train)
 
-# Evaluate
+# Prediction
 y_pred = pipeline.predict(X_test)
 
-print("Accuracy:", accuracy_score(y_test, y_pred))
+# Metrics
+accuracy = accuracy_score(y_test, y_pred)
+precision = precision_score(y_test, y_pred, zero_division=0)
+recall = recall_score(y_test, y_pred, zero_division=0)
+f1 = f1_score(y_test, y_pred, zero_division=0)
+
+print("Random Forest Experiment")
+print("========================")
+print("n_estimators:", rf_params["n_estimators"])
+print("max_depth:", rf_params["max_depth"])
+print("Accuracy:", accuracy)
+print("Precision:", precision)
+print("Recall:", recall)
+print("F1-score:", f1)
+
 print("\nClassification Report:")
 print(classification_report(y_test, y_pred))
 
 # Save model
-model_path = "models/random_forest_v2.pkl"
+model_path = "models/random_forest.pkl"
 joblib.dump(pipeline, model_path)
 
-print(f"\nModel saved to: {model_path}")
+# Save metrics
+metrics = {
+    "accuracy": float(accuracy),
+    "precision": float(precision),
+    "recall": float(recall),
+    "f1_score": float(f1)
+}
+
+with open("metrics.json", "w") as f:
+    json.dump(metrics, f, indent=4)
+
+print("\nModel saved to:", model_path)
+print("Metrics saved to: metrics.json")

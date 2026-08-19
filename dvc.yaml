@@ -1,0 +1,17 @@
+stages:
+
+  train:
+    cmd: python src/train.py
+    deps:
+      - src/train.py
+      - data/kidney_disease.csv
+    params:
+      - random_forest.n_estimators
+      - random_forest.max_depth
+      - random_forest.random_state
+      - data.test_size
+      - data.random_state
+    outs:
+      - models/random_forest.pkl
+    metrics:
+      - metrics.json
