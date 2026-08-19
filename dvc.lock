@@ -1,0 +1,29 @@
+schema: '2.0'
+stages:
+  train:
+    cmd: python src/train.py
+    deps:
+    - path: data/kidney_disease.csv
+      hash: md5
+      md5: da7657a118b808db1bbffbd94ccc7991
+      size: 48952
+    - path: src/train.py
+      hash: md5
+      md5: 8dbcca5a206c9cdef8e352b6b4b83da8
+      size: 3511
+    params:
+      params.yaml:
+        data.random_state: 42
+        data.test_size: 0.2
+        random_forest.max_depth:
+        random_forest.n_estimators: 100
+        random_forest.random_state: 42
+    outs:
+    - path: metrics.json
+      hash: md5
+      md5: aed4c6216573de4906939205915c8bca
+      size: 90
+    - path: models/random_forest.pkl
+      hash: md5
+      md5: 9f2631b831adf2ef8b21ca0e64b57630
+      size: 373883
